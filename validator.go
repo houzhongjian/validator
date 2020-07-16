@@ -21,6 +21,7 @@ func Check(obj interface{}) error {
 
 			mp := map[string]string{}
 			arr := strings.Split(tag, ";")
+
 			for _, v := range arr {
 				//正则表达式需要单独处理一下.
 				pattern := "^(expression:)"
@@ -58,80 +59,25 @@ func valid(mp map[string]map[string]string, obj interface{}) error {
 		//字符串.
 		if types == "string" {
 			value := v.Field(i).Interface().(string)
-
-			//检查必填.
-			requiredVal, ok := mpData["required"]
-			if ok && requiredVal == "true" {
-				err := checkStringRequired(field, value)
-				if err != nil {
-					return err
-				}
-			}
-
-			//检查长度，是否必填.
-			if requiredVal == "true" || value != "" {
-				length, ok := mpData["length"]
-				if ok {
-					err := checkStringLength(length, mpData["name"], value)
-					if err != nil {
-						return err
-					}
-				}
+			if err := validString(value, mpData); err != nil {
+				return err
 			}
 		}
 
 		//int.
 		if types == "int" {
 			value := v.Field(i).Interface().(int)
-			minVal, ok := mpData["min"]
-			if ok {
-				min := parseint(minVal)
-				if value < min {
-					return errors.New(fmt.Sprintf("%s不能小于%d", mpData["name"], min))
-				}
-			}
-
-			maxVal, ok := mpData["max"]
-			if ok {
-				max := parseint(maxVal)
-				if value > max {
-					return errors.New(fmt.Sprintf("%s不能大于%d", mpData["name"], max))
-				}
+			if err := validInt(value, mpData); err != nil {
+				return err
 			}
 		}
 
 		//正则验证.
 		if types == "regexp" {
 			value := v.Field(i).Interface().(string)
-
-			//检查必填.
-			requiredVal, ok := mpData["required"]
-			if ok && requiredVal == "true" {
-				err := checkStringRequired(field, value)
-				if err != nil {
-					return err
-				}
+			if err := validRegexp(value, mpData); err != nil {
+				return err
 			}
-
-			//检查正则，是否必填.
-			if requiredVal == "true" || value != "" {
-				pattern, ok := mpData["expression"]
-				if !ok {
-					return errors.New(fmt.Sprintf(`%s格式不正确`, mpData["name"]))
-				}
-				if len(pattern) < 1 {
-					return errors.New(fmt.Sprintf(`%s格式不正确`, mpData["name"]))
-				}
-				reg, err := regexp.Compile(pattern)
-				if err != nil {
-					return errors.New(fmt.Sprintf(`%s格式不正确`, mpData["name"]))
-				}
-				regVal := reg.FindString(value)
-				if regVal != value {
-					return errors.New(fmt.Sprintf(`%s格式不正确`, mpData["name"]))
-				}
-			}
-
 		}
 
 	}
@@ -163,6 +109,84 @@ func checkStringLength(length string, name, val string) error {
 	}
 	if len([]rune(val)) > max {
 		return errors.New(fmt.Sprintf("%s的长度不能大于位%d", name, max))
+	}
+
+	return nil
+}
+
+func validRegexp(value string, mpData map[string]string) error {
+	name := mpData["name"]
+	//检查必填.
+	requiredVal, ok := mpData["required"]
+	if ok && requiredVal == "true" {
+		err := checkStringRequired(name, value)
+		if err != nil {
+			return err
+		}
+	}
+
+	//检查正则，是否必填.
+	if requiredVal == "true" || value != "" {
+		pattern, ok := mpData["expression"]
+		if !ok {
+			return errors.New(fmt.Sprintf(`%s格式不正确`, mpData["name"]))
+		}
+		if len(pattern) < 1 {
+			return errors.New(fmt.Sprintf(`%s格式不正确`, mpData["name"]))
+		}
+		reg, err := regexp.Compile(pattern)
+		if err != nil {
+			return errors.New(fmt.Sprintf(`%s格式不正确`, mpData["name"]))
+		}
+		regVal := reg.FindString(value)
+		if regVal != value {
+			return errors.New(fmt.Sprintf(`%s格式不正确`, mpData["name"]))
+		}
+	}
+
+	return nil
+}
+
+func validInt(value int, mpData map[string]string) error {
+	minVal, ok := mpData["min"]
+	if ok {
+		min := parseint(minVal)
+		if value < min {
+			return errors.New(fmt.Sprintf("%s不能小于%d", mpData["name"], min))
+		}
+	}
+
+	maxVal, ok := mpData["max"]
+	if ok {
+		max := parseint(maxVal)
+		if value > max {
+			return errors.New(fmt.Sprintf("%s不能大于%d", mpData["name"], max))
+		}
+	}
+
+	return nil
+}
+
+func validString(value string, mpData map[string]string) error {
+	name := mpData["name"]
+	//检查必填.
+	requiredVal, ok := mpData["required"]
+	if ok && requiredVal == "true" {
+		err := checkStringRequired(name, value)
+		if err != nil {
+			return err
+		}
+	}
+
+	//检查长度，是否必填.
+	if requiredVal == "true" || value != "" {
+		length, ok := mpData["length"]
+		if ok {
+			err := checkStringLength(length, mpData["name"], value)
+			if err != nil {
+				return err
+			}
+		}
 	}
 
 	return nil
