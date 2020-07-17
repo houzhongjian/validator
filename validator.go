@@ -50,7 +50,10 @@ func valid(mp map[string]map[string]string, obj interface{}) error {
 	for i := 0; i < t.NumField(); i++ {
 		field := t.Field(i).Name
 
-		mpData := mp[field]
+		mpData, ok := mp[field]
+		if !ok {
+			continue
+		}
 
 		// 获取对应的类型.
 		types, ok := mpData["type"]
@@ -118,7 +121,10 @@ func checkStringLength(length string, name, val string) error {
 }
 
 func validRegexp(value string, mpData map[string]string) error {
-	name := mpData["name"]
+	name, ok := mpData["name"]
+	if !ok {
+		name = ""
+	}
 	//检查必填.
 	requiredVal, ok := mpData["required"]
 	if ok && requiredVal == "true" {
@@ -132,18 +138,18 @@ func validRegexp(value string, mpData map[string]string) error {
 	if requiredVal == "true" || value != "" {
 		pattern, ok := mpData["expression"]
 		if !ok {
-			return errors.New(fmt.Sprintf(`%s格式不正确`, mpData["name"]))
+			return errors.New(fmt.Sprintf(`%s格式不正确`, name))
 		}
 		if len(pattern) < 1 {
-			return errors.New(fmt.Sprintf(`%s格式不正确`, mpData["name"]))
+			return errors.New(fmt.Sprintf(`%s格式不正确`, name))
 		}
 		reg, err := regexp.Compile(pattern)
 		if err != nil {
-			return errors.New(fmt.Sprintf(`%s格式不正确`, mpData["name"]))
+			return errors.New(fmt.Sprintf(`%s格式不正确`, name))
 		}
 		regVal := reg.FindString(value)
 		if regVal != value {
-			return errors.New(fmt.Sprintf(`%s格式不正确`, mpData["name"]))
+			return errors.New(fmt.Sprintf(`%s格式不正确`, name))
 		}
 	}
 
@@ -171,7 +177,10 @@ func validInt(value int, mpData map[string]string) error {
 }
 
 func validString(value string, mpData map[string]string) error {
-	name := mpData["name"]
+	name, ok := mpData["name"]
+	if !ok {
+		name = ""
+	}
 	//检查必填.
 	requiredVal, ok := mpData["required"]
 	if ok && requiredVal == "true" {
@@ -185,7 +194,7 @@ func validString(value string, mpData map[string]string) error {
 	if requiredVal == "true" || value != "" {
 		length, ok := mpData["length"]
 		if ok {
-			err := checkStringLength(length, mpData["name"], value)
+			err := checkStringLength(length, name, value)
 			if err != nil {
 				return err
 			}
