@@ -31,7 +31,9 @@ func Check(obj interface{}) error {
 					mp["expression"] = expression
 				} else {
 					item := strings.Split(v, ":")
-					mp[item[0]] = item[1]
+					if len(item) == 2 {
+						mp[item[0]] = item[1]
+					}
 				}
 			}
 
@@ -95,20 +97,21 @@ func checkStringRequired(name, value string) error {
 
 //checkStringLength 检查字符串的长度是否合法.
 func checkStringLength(length string, name, val string) error {
-	var min, max int
 	length = strings.Replace(length, "[", "", -1)
 	length = strings.Replace(length, "]", "", -1)
+
+	var min, max int
 	arr := strings.Split(length, "-")
 	if len(arr) == 2 {
 		min = parseint(arr[0])
 		max = parseint(arr[1])
-	}
 
-	if len([]rune(val)) < min {
-		return errors.New(fmt.Sprintf("%s的长度不能小于%d位", name, min))
-	}
-	if len([]rune(val)) > max {
-		return errors.New(fmt.Sprintf("%s的长度不能大于位%d", name, max))
+		if len([]rune(val)) < min {
+			return errors.New(fmt.Sprintf("%s的长度不能小于%d位", name, min))
+		}
+		if len([]rune(val)) > max {
+			return errors.New(fmt.Sprintf("%s的长度不能大于%d位", name, max))
+		}
 	}
 
 	return nil
